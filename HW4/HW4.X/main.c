@@ -1,5 +1,6 @@
-#include<xc.h>           // processor SFR definitions
-#include<sys/attribs.h>
+#include <xc.h>           // processor SFR definitions
+#include <sys/attribs.h>
+#include <stdio.h>
 
 // DEVCFG0
 #pragma config DEBUG = OFF // disable debugging
@@ -32,7 +33,7 @@
 #pragma config PMDL1WAY = OFF // allow multiple reconfigurations
 #pragma config IOL1WAY = OFF // allow multiple reconfigurations
 
-void initI2C(void);
+
 
 int main() {
 
@@ -56,33 +57,28 @@ int main() {
     LATAbits.LATA4 = 0;
     
     initI2C();
+    ssd1306_setup();
     
     __builtin_enable_interrupts();
+    char *message1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    char *message2 = "01234567890123456789012345";
+    drawString(0, 0, message1);
+    drawString(0, 8, message2);
+    int i = 0;
+    char m[50];
+    char n[50];
+    float FPS;
     
     while (1) {
         _CP0_SET_COUNT(0);
         
-        while (_CP0_GET_COUNT() < 3000000){
-            LATAbits.LATA4 = 1;
-        }
-        _CP0_SET_COUNT(0);
-        while (_CP0_GET_COUNT() < 3000000){
-            LATAbits.LATA4 = 0;
-        }
-        _CP0_SET_COUNT(0);
+        sprintf(m, "i = %d", i);
+        drawString(0, 16, m);
         
-        unsigned char buttonPush = readPin(0b01000001, 0x13);
-        if (buttonPush == 0){
-            setPin(0b01000000, 0x14, 0b11111111);
-        }
-        else{
-            setPin(0b01000000, 0x14, 0b00000000);
-        }
+        FPS = 24000000.0/_CP0_GET_COUNT();
+        sprintf(n, "FPS=%0.2f", FPS);
+        drawString(0, 24, n);
+        i++;
     }   
 }
 
-void initI2C(){
-    i2c_master_setup();
-    setPin(0b01000000, 0x00, 0x00); //make all A pins to outputs
-    setPin(0b01000000, 0x01, 0xFF); //make all B pins inputs
-}
