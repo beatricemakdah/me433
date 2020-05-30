@@ -6,7 +6,7 @@
 void i2c_master_setup(void) {
     // using a large BRG to see it on the nScope, make it smaller after verifying that code works
     // look up TPGD in the datasheet
-    I2C1BRG = 1000; // I2CBRG = [1/(2*Fsck) - TPGD]*Pblck - 2 (TPGD is the Pulse Gobbler Delay)
+    I2C1BRG = 27; // I2CBRG = [1/(2*Fsck) - TPGD]*Pblck - 2 (TPGD is the Pulse Gobbler Delay)
     I2C1CONbits.ON = 1; // turn on the I2C1 module
 }
 
@@ -31,7 +31,9 @@ void i2c_master_send(unsigned char byte) { // send a byte to slave
     } // wait for the transmission to finish
     if (I2C1STATbits.ACKSTAT) { // if this is high, slave has not acknowledged
         // ("I2C1 Master: failed to receive ACK\r\n");
-        while(1){} // get stuck here if the chip does not ACK back
+        while(1){
+
+        } // get stuck here if the chip does not ACK back
     }
 }
 
@@ -61,7 +63,7 @@ void i2c_master_stop(void) { // send a STOP:
 
 void setPin(unsigned char addr, unsigned char reg, unsigned char val){
     i2c_master_start();
-    i2c_master_send(addr);
+    i2c_master_send(addr);//write address
     i2c_master_send(reg);
     i2c_master_send(val);
     i2c_master_stop();
@@ -69,12 +71,18 @@ void setPin(unsigned char addr, unsigned char reg, unsigned char val){
 
 unsigned char readPin(unsigned char addr, unsigned char reg){
     i2c_master_start();
-    i2c_master_send(addr-1);
+    i2c_master_send(addr); //write address
     i2c_master_send(reg);
     i2c_master_restart();
-    i2c_master_send(addr);
+    i2c_master_send(addr+0b1); //read address
     unsigned char data = i2c_master_recv();
     i2c_master_ack(1);
     i2c_master_stop();
     return data;
+}
+
+void initI2C(){
+    i2c_master_setup();
+    setPin(0b01000000, 0x00, 0x00); //make all A pins to outputs
+    setPin(0b01000000, 0x01, 0xFF); //make all B pins inputs
 }

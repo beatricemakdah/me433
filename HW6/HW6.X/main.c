@@ -1,6 +1,7 @@
-#include <xc.h>           // processor SFR definitions
-#include <sys/attribs.h>
+#include<xc.h>           // processor SFR definitions
+#include<sys/attribs.h>
 #include <stdio.h>
+#include "imu.h"
 
 // DEVCFG0
 #pragma config DEBUG = OFF // disable debugging
@@ -34,7 +35,6 @@
 #pragma config IOL1WAY = OFF // allow multiple reconfigurations
 
 
-
 int main() {
 
     __builtin_disable_interrupts(); // disable interrupts while initializing things
@@ -57,28 +57,31 @@ int main() {
     LATAbits.LATA4 = 0;
     
     i2c_master_setup();
+    imu_setup();
     ssd1306_setup();
     
+    signed short imu[7];
+    char message[50];
+    
     __builtin_enable_interrupts();
-    char *message1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    char *message2 = "01234567890123456789012345";
-    drawString(0, 0, message1);
-    drawString(0, 8, message2);
-    int i = 0;
-    char m[50];
-    char n[50];
-    float FPS;
     
     while (1) {
         _CP0_SET_COUNT(0);
+        LATAbits.LATA4 = !LATAbits.LATA4;
+        imu_read(IMU_OUT_TEMP_L, imu, 7);
         
-        sprintf(m, "i = %d", i);
-        drawString(0, 16, m);
+        if(0){
+            sprintf(message, "g: %d %d %d ", imu[1], imu[2], imu[3]);
+            drawString(0, 0, message);
+            sprintf(message, "a: %d %d %d ", imu[4], imu[5], imu[6]);
+            drawString(0, 8, message);
+            sprintf(message, "t: %d ", imu[0]);
+            drawString(0, 16, message);
+        } else{
+            bar_x(imu[5],2);
+            bar_y(imu[4],3);
+        }
         
-        FPS = 24000000.0/_CP0_GET_COUNT();
-        sprintf(n, "FPS=%0.2f", FPS);
-        drawString(0, 24, n);
-        i++;
+        while (_CP0_GET_COUNT() < 1200000){}
     }   
 }
-
